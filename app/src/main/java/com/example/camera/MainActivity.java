@@ -2,12 +2,24 @@ package com.example.camera;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.provider.MediaStore;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.ml.vision.FirebaseVision;
+import com.google.firebase.ml.vision.common.FirebaseVisionImage;
+import com.google.firebase.ml.vision.text.FirebaseVisionCloudTextRecognizerOptions;
+import com.google.firebase.ml.vision.text.FirebaseVisionText;
+import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
+
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -43,6 +55,31 @@ public class MainActivity extends AppCompatActivity {
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
             imageView.setImageBitmap(imageBitmap);
+            FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(imageBitmap);
+            FirebaseVisionCloudTextRecognizerOptions options =
+                    new FirebaseVisionCloudTextRecognizerOptions.Builder()
+                            .setLanguageHints(Arrays.asList("en", "hi"))
+                            .build();
+            FirebaseVisionTextRecognizer textRecognizer = FirebaseVision.getInstance()
+                    .getCloudTextRecognizer(options);
+            textRecognizer.processImage(image)
+                    .addOnSuccessListener(new OnSuccessListener<FirebaseVisionText>() {
+                        @Override
+                        public void onSuccess(FirebaseVisionText result) {
+                            // Task completed successfully
+                            // ...
+                            System.out.println("successfull%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+                        }
+                    })
+                    .addOnFailureListener(
+                            new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+                                    // Task failed with an exception
+                                    // ...
+                                    System.out.println("Aadi madarchod%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%555");
+                                }
+                            });
         }
     }
 }
