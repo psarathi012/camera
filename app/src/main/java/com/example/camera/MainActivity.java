@@ -30,12 +30,16 @@ import com.google.android.gms.vision.text.TextBlock;
 import com.google.android.gms.vision.text.TextRecognizer;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Scanner;
+
+import me.xdrop.fuzzywuzzy.FuzzySearch;
 
 public class MainActivity extends AppCompatActivity {
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
-    private static final String TAG = "ML_KIT";
     ImageView imageView;
     TextView textView;
 
@@ -63,13 +67,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private int matchWords(String wrd, String medicine){
+        wrd = wrd.toLowerCase();
+        medicine = medicine.toLowerCase();
+        return FuzzySearch.ratio(medicine,wrd);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
             imageView.setImageBitmap(imageBitmap);
-            //byte[] byteArray = encodeTobase64(imageBitmap);
             TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext()).build();
             if(!textRecognizer.isOperational()){
                 System.out.println("Non operational *******************************");
@@ -83,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
                 for (int i =0; i<items.size(); i++){
                     TextBlock myitems = items.valueAt(i);
                     sb.append(myitems.getValue());
-                    sb.append("\n");
+                    sb.append(" ");
                 }
                 System.out.println("STRING ****************************************");
                 System.out.println(sb.toString());
@@ -92,6 +101,33 @@ public class MainActivity extends AppCompatActivity {
                     System.out.println("Sorry, No text detected");
                     text = "No text found";
                 }
+                ArrayList<String> medicines= new ArrayList<>();
+                try {
+                    Scanner sc = new Scanner(getAssets().open("medicines.txt"));
+                    while (sc.hasNextLine()) {
+                        String ln = sc.nextLine();
+                        System.out.println(ln);
+                        System.out.println("***************************************************");
+                        medicines.add(ln);
+                    }
+                }catch (Exception e){
+                    System.out.println(e.getMessage());
+                    System.out.println("***************************************************");
+                }
+                String[] foundwrds = text.split(" ");
+                int max = -1;
+                for (String foundwrd : foundwrds) {
+                    for (int j = 0; j < medicines.size(); j++) {
+                        int score = matchWords(foundwrd, medicines.get(j));
+                        if (score > max) {
+                            max = score;
+                            text = medicines.get(j);
+                        }
+                    }
+                }
+                System.out.println(max);
+                System.out.println(text);
+                System.out.println("************************************************************");
                 textView.setText(text);
             }
         }
