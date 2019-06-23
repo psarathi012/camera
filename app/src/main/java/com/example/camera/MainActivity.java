@@ -1,30 +1,43 @@
 package com.example.camera;
 
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
+import android.util.SparseArray;
+import android.util.SparseIntArray;
+import android.view.Surface;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.ml.vision.FirebaseVision;
-import com.google.firebase.ml.vision.common.FirebaseVisionImage;
-import com.google.firebase.ml.vision.text.FirebaseVisionCloudTextRecognizerOptions;
-import com.google.firebase.ml.vision.text.FirebaseVisionText;
-import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
+import com.google.android.gms.vision.Frame;
+import com.google.android.gms.vision.text.TextBlock;
+import com.google.android.gms.vision.text.TextRecognizer;
 
+import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
+    private static final String TAG = "ML_KIT";
     ImageView imageView;
+    TextView textView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         imageView= findViewById(R.id.image);
         button = findViewById(R.id.button);
+        textView = findViewById(R.id.textView);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -55,31 +69,31 @@ public class MainActivity extends AppCompatActivity {
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
             imageView.setImageBitmap(imageBitmap);
-            FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(imageBitmap);
-            FirebaseVisionCloudTextRecognizerOptions options =
-                    new FirebaseVisionCloudTextRecognizerOptions.Builder()
-                            .setLanguageHints(Arrays.asList("en", "hi"))
-                            .build();
-            FirebaseVisionTextRecognizer textRecognizer = FirebaseVision.getInstance()
-                    .getCloudTextRecognizer(options);
-            textRecognizer.processImage(image)
-                    .addOnSuccessListener(new OnSuccessListener<FirebaseVisionText>() {
-                        @Override
-                        public void onSuccess(FirebaseVisionText result) {
-                            // Task completed successfully
-                            // ...
-                            System.out.println("successfull%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-                        }
-                    })
-                    .addOnFailureListener(
-                            new OnFailureListener() {
-                                @Override
-                                public void onFailure(@NonNull Exception e) {
-                                    // Task failed with an exception
-                                    // ...
-                                    System.out.println("Aadi madarchod%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%555");
-                                }
-                            });
+            //byte[] byteArray = encodeTobase64(imageBitmap);
+            TextRecognizer textRecognizer = new TextRecognizer.Builder(getApplicationContext()).build();
+            if(!textRecognizer.isOperational()){
+                System.out.println("Non operational *******************************");
+            }
+            else {
+                System.out.println("Operational ******************************");
+                assert imageBitmap != null;
+                Frame frame = new Frame.Builder().setBitmap(imageBitmap).build();
+                SparseArray<TextBlock> items = textRecognizer.detect(frame);
+                StringBuilder sb = new StringBuilder();
+                for (int i =0; i<items.size(); i++){
+                    TextBlock myitems = items.valueAt(i);
+                    sb.append(myitems.getValue());
+                    sb.append("\n");
+                }
+                System.out.println("STRING ****************************************");
+                System.out.println(sb.toString());
+                String text = sb.toString();
+                if(items.size()==0){
+                    System.out.println("Sorry, No text detected");
+                    text = "No text found";
+                }
+                textView.setText(text);
+            }
         }
     }
 }
